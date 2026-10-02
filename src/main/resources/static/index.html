@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar de Vagas</title>
+<style>
+	:root { --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #5d6677; --accent: #1f6feb; --warn: #b35900; --line: #dde1e7; }
+	@media (prefers-color-scheme: dark) {
+		:root { --bg: #11151c; --card: #1a2029; --text: #e6e9ef; --muted: #9aa4b5; --accent: #5b9dff; --warn: #ffab5c; --line: #2b3340; }
+	}
+	* { box-sizing: border-box; }
+	body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+	main { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+	header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+	h1 { margin: 0; font-size: 1.5rem; }
+	button, select { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+	button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+	#status { color: var(--muted); min-height: 1.5em; margin: 8px 0; }
+	.job { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+	.job h2 { font-size: 1.05rem; margin: 0 0 4px; }
+	.job a { color: var(--accent); }
+	.meta { color: var(--muted); font-size: .9rem; }
+	.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+	.score { float: right; font-weight: 600; }
+	.followup { color: var(--warn); font-weight: 600; }
+	details { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px; margin: 16px 0; }
+	details li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+	<header>
+		<h1>Radar de Vagas</h1>
+		<div>
+			<select id="filter" aria-label="Filtrar por status">
+				<option value="">Todas (menos descartadas)</option>
+				<option>NOVA</option><option>APLICADA</option><option>ENTREVISTA</option>
+				<option>OFERTA</option><option>RECUSADA</option><option>DESCARTADA</option>
+			</select>
+			<button class="primary" id="collect">Buscar vagas agora</button>
+		</div>
+	</header>
+
+	<details>
+		<summary>Buscas salvas (sites sem API pública: abra e candidate-se por lá)</summary>
+		<ul>
+			<li><a target="_blank" rel="noopener" href="https://www.linkedin.com/jobs/search/?keywords=desenvolvedor%20java&location=Campo%20Grande%2C%20Mato%20Grosso%20do%20Sul&f_E=1%2C2">LinkedIn — Java estágio/júnior em Campo Grande</a></li>
+			<li><a target="_blank" rel="noopener" href="https://www.linkedin.com/jobs/search/?keywords=desenvolvedor%20java&location=Brasil&f_WT=2&f_E=1%2C2">LinkedIn — Java estágio/júnior remoto no Brasil</a></li>
+			<li><a target="_blank" rel="noopener" href="https://portal.gupy.io/job-search/term=java">Gupy — vagas Java</a></li>
+			<li><a target="_blank" rel="noopener" href="https://br.indeed.com/jobs?q=desenvolvedor+java&l=Campo+Grande%2C+MS">Indeed — Java em Campo Grande, MS</a></li>
+			<li><a target="_blank" rel="noopener" href="https://br.indeed.com/jobs?q=desenvolvedor+java+j%C3%BAnior&l=Remoto">Indeed — Java júnior remoto</a></li>
+		</ul>
+	</details>
+
+	<p id="status" role="status" aria-live="polite"></p>
+	<section id="jobs"></section>
+</main>
+
+<script>
+const STATUSES = ["NOVA", "APLICADA", "ENTREVISTA", "OFERTA", "RECUSADA", "DESCARTADA"];
+const $ = (id) => document.getElementById(id);
+const say = (text) => { $("status").textContent = text; };
+
+function el(tag, props = {}, ...children) {
+	const node = Object.assign(document.createElement(tag), props);
+	node.append(...children);
+	return node;
+}
+
+// Titles come from public GitHub issues: always use textContent, never innerHTML.
+function render(jobs) {
+	const today = new Date().toISOString().slice(0, 10);
+	$("jobs").replaceChildren(...jobs.map((job) => {
+		const select = el("select", { "ariaLabel": "Status" },
+			...STATUSES.map((s) => el("option", { value: s, selected: s === job.status, textContent: s })));
+		select.onchange = () => update(job.id, select.value);
+
+		const copy = el("button", { textContent: "Copiar mensagem" });
+		copy.onclick = async () => {
+			const text = await (await fetch(`/api/jobs/${job.id}/message`)).text();
+			await navigator.clipboard.writeText(text);
+			say("Mensagem copiada. Abra a vaga e cole na candidatura.");
+		};
+
+		const due = job.followUpOn && job.followUpOn <= today
+			? el("span", { className: "followup", textContent: ` · Follow-up pendente (${job.followUpOn})` }) : "";
+		return el("article", { className: "job" },
+			el("span", { className: "score", textContent: `${job.score} pts` }),
+			el("h2", {}, el("a", { href: job.url, target: "_blank", rel: "noopener", textContent: job.title })),
+			el("div", { className: "meta", textContent:
+				[job.company, job.location, job.source, job.tags].filter(Boolean).join(" · ") }, due),
+			el("div", { className: "actions" }, select, copy));
+	}));
+	if (!jobs.length) say("Nenhuma vaga neste filtro.");
+}
+
+async function load() {
+	const status = $("filter").value;
+	const jobs = await (await fetch("/api/jobs" + (status ? `?status=${status}` : ""))).json();
+	render(jobs);
+}
+
+async function update(id, status) {
+	const res = await fetch(`/api/jobs/${id}`, {
+		method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+	say(res.ok ? `Status alterado para ${status}.` : "Não foi possível salvar o status.");
+	load();
+}
+
+$("collect").onclick = async () => {
+	say("Buscando vagas...");
+	const r = await (await fetch("/api/collect", { method: "POST" })).json();
+	say(`${r.read} vagas lidas, ${r.saved} novas.` + (r.failedSources.length ? ` Falharam: ${r.failedSources.join(", ")}.` : ""));
+	load();
+};
+$("filter").onchange = load;
+load();
+</script>
+</body>
+</html>
