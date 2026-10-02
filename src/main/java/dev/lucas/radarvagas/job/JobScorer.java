@@ -26,6 +26,11 @@ public class JobScorer {
 	private static final Pattern REMOTE = words(
 			"remoto|remota|remote|home office|anywhere|worldwide|latam|brazil|brasil|americas|south america");
 	private static final Pattern LOCAL = words("campo grande|mato grosso do sul|ms");
+	// Remote, but only for people living there ("somente EUA/Canadá", Remotive's "USA")
+	private static final Pattern RESTRICTED = words(
+			"eua|usa|us|united states|canada|europe|europa|uk|united kingdom|germany|india");
+	private static final Pattern BRAZIL_FRIENDLY = words(
+			"brazil|brasil|latam|americas|south america|worldwide|anywhere");
 	private static final Pattern STACK = words(
 			"postgres|postgresql|sql|docker|rabbitmq|kafka|junit|testes automatizados|testcontainers|rest|microservices");
 
@@ -41,6 +46,9 @@ public class JobScorer {
 		}
 		boolean local = LOCAL.matcher(location).find();
 		if (!local && !REMOTE.matcher(location).find()) {
+			return OptionalInt.empty();
+		}
+		if (RESTRICTED.matcher(location).find() && !BRAZIL_FRIENDLY.matcher(location).find()) {
 			return OptionalInt.empty();
 		}
 

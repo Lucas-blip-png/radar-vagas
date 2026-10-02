@@ -43,9 +43,17 @@ class JobScorerTest {
 			[Remoto] Especialista Spring                | Remoto
 			[São Paulo] Desenvolvedor Java Júnior       | São Paulo - SP
 			[Remoto] Desenvolvedor Front-end React      | Remoto
+			[Remoto - somente EUA/Canadá] Java Developer | Remoto
+			Junior Java Developer                       | USA
 			""")
 	void rejectsSeniorOnSiteElsewhereAndNonBackendJobs(String title, String location) {
 		assertThat(scorer.score(post(title, location, ""))).isEmpty();
+	}
+
+	@Test
+	void acceptsInternationalRemoteJobsOpenToBrazil() {
+		assertThat(scorer.score(post("Junior Java Developer", "Northern America, LATAM, Europe, APAC", ""))).isPresent();
+		assertThat(scorer.score(post("Junior Java Developer", "Worldwide", ""))).isPresent();
 	}
 
 	@Test

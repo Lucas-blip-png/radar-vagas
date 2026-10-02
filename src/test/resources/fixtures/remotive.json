@@ -1,0 +1,32 @@
+{
+  "0-legal-notice": "Please link back to the URL found on remotive.com",
+  "job-count": 2,
+  "jobs": [
+    {
+      "id": 1,
+      "url": "https://remotive.com/remote-jobs/software-dev/java-developer-1",
+      "title": "Junior Java Developer",
+      "company_name": "Globex",
+      "category": "Software Development",
+      "tags": ["java", "spring", "sql"],
+      "job_type": "full_time",
+      "publication_date": "2026-09-21T12:55:11",
+      "candidate_required_location": "Worldwide",
+      "salary": "",
+      "description": "<p>Build REST APIs with Spring Boot.</p>"
+    },
+    {
+      "id": 2,
+      "url": "https://remotive.com/remote-jobs/software-dev/backend-engineer-2",
+      "title": "Backend Engineer",
+      "company_name": "Initech",
+      "category": "Software Development",
+      "tags": ["java"],
+      "job_type": "full_time",
+      "publication_date": "2026-09-20T10:00:00",
+      "candidate_required_location": "USA",
+      "salary": "",
+      "description": "<p>US only.</p>"
+    }
+  ]
+}
