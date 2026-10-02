@@ -1,0 +1,12 @@
+services:
+  radar:
+    build: .
+    ports:
+      - "127.0.0.1:${PORT:-8080}:8080"
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    volumes:
+      - radar-data:/data
+
+volumes:
+  radar-data:
