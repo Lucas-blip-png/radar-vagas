@@ -41,7 +41,9 @@ public class JobScorer {
 		String location = normalize(posting.location()) + " " + headline;
 		String all = headline + " " + normalize(posting.body());
 
-		if (SENIOR.matcher(headline).find() || !BACKEND.matcher(all).find()) {
+		// The stack must show up in the title or labels: descriptions often list the company's
+		// whole stack, which would let a designer or sales job through.
+		if (SENIOR.matcher(headline).find() || !BACKEND.matcher(headline).find()) {
 			return OptionalInt.empty();
 		}
 		boolean local = LOCAL.matcher(location).find();
